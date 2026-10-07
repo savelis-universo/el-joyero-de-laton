@@ -5,65 +5,231 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>El Joyero de Latón — Savelis</title>
   <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
-      background-color: #0d1117;
+      background-color: #080a0f;
       color: #e0e6ed;
       font-family: 'Courier New', Courier, monospace;
-      text-align: center;
-      padding: 2rem;
-      margin: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      padding: 1.5rem;
+      overflow-x: hidden;
+      position: relative;
     }
+
+    /* Fondo de Matrix en Latón/Ámbar */
+    canvas#matrix {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 1;
+      opacity: 0.25;
+      pointer-events: none;
+    }
+
     .container {
-      max-width: 700px;
-      margin: 0 auto;
-      background: #161b22;
+      position: relative;
+      z-index: 2;
+      max-width: 800px;
+      width: 100%;
+      background: rgba(18, 22, 30, 0.92);
       padding: 2.5rem;
-      border-radius: 8px;
-      border: 1px solid #c5a059; /* Tono latón */
-      box-shadow: 0 4px 20px rgba(197, 160, 89, 0.2);
+      border-radius: 6px;
+      border: 1px solid #c5a059; /* Tono Latón */
+      box-shadow: 0 0 35px rgba(197, 160, 89, 0.15);
+      text-align: center;
+      backdrop-filter: blur(4px);
     }
-    h1 { color: #c5a059; font-size: 1.8em; letter-spacing: 2px; }
-    p { line-height: 1.6; color: #a3b1c2; }
-    .matrix-box {
+
+    h1 {
+      color: #c5a059;
+      font-size: 1.6em;
+      letter-spacing: 2px;
+      margin-bottom: 0.5rem;
+      text-shadow: 0 0 10px rgba(197, 160, 89, 0.3);
+    }
+
+    p.subtitle {
+      color: #8b9bb4;
+      font-size: 0.9em;
+      margin-bottom: 2rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .map-container {
       background: #000;
       border: 1px solid #443210;
-      padding: 1.5rem;
-      margin: 2rem 0;
-      color: #d4af37;
-      font-size: 0.9em;
-      text-align: left;
+      padding: 0.8rem;
+      border-radius: 4px;
+      margin-bottom: 2rem;
+      box-shadow: inset 0 0 15px rgba(0,0,0,0.8);
     }
-    .btn {
-      display: inline-block;
-      background-color: #c5a059;
-      color: #0d1117;
-      padding: 0.8rem 1.5rem;
-      margin-top: 1rem;
-      text-decoration: none;
-      font-weight: bold;
+
+    .map-container img {
+      max-width: 100%;
+      height: auto;
+      display: block;
+      margin: 0 auto;
+      border: 1px solid #c5a059;
+    }
+
+    .lore-box {
+      text-align: left;
+      background: rgba(0, 0, 0, 0.4);
+      border-left: 3px solid #c5a059;
+      padding: 1rem;
+      margin-bottom: 2rem;
+      font-size: 0.88em;
+      line-height: 1.6;
+      color: #b5c3d5;
+    }
+
+    .form-box {
+      background: #0d1117;
+      border: 1px dashed #c5a059;
+      padding: 1.8rem;
       border-radius: 4px;
     }
-    .btn:hover { background-color: #e5be75; }
+
+    .form-box h3 {
+      color: #d4af37;
+      font-size: 1.1em;
+      margin-bottom: 0.8rem;
+    }
+
+    .form-box p {
+      color: #8b9bb4;
+      font-size: 0.85em;
+      margin-bottom: 1.2rem;
+      line-height: 1.5;
+    }
+
+    .input-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.8rem;
+      max-width: 450px;
+      margin: 0 auto;
+    }
+
+    @media (min-width: 600px) {
+      .input-group {
+        flex-direction: row;
+      }
+    }
+
+    input[type="email"] {
+      flex: 1;
+      padding: 0.8rem 1rem;
+      background: #161b22;
+      border: 1px solid #443210;
+      color: #e0e6ed;
+      border-radius: 4px;
+      font-family: inherit;
+      outline: none;
+    }
+
+    input[type="email"]:focus {
+      border-color: #c5a059;
+      box-shadow: 0 0 8px rgba(197, 160, 89, 0.4);
+    }
+
+    button.btn {
+      background-color: #c5a059;
+      color: #080a0f;
+      border: none;
+      padding: 0.8rem 1.5rem;
+      font-family: inherit;
+      font-weight: bold;
+      letter-spacing: 1px;
+      cursor: pointer;
+      border-radius: 4px;
+      transition: all 0.2s ease;
+    }
+
+    button.btn:hover {
+      background-color: #e5be75;
+      box-shadow: 0 0 12px rgba(229, 190, 117, 0.5);
+    }
   </style>
 </head>
 <body>
 
-  <div class="container">
-    <h1>EL JOYERO DE LATÓN</h1>
-    <p>Registros recuperados del cuaderno de Lionel y la memoria del brazalete.</p>
+  <!-- Fondo de lluvia/vibración de latón -->
+  <canvas id="matrix"></canvas>
 
-    <!-- AQUÍ SE COLOCARÁ EL MAPA Y LA MATRIZ -->
-    <div class="matrix-box">
-<img src="BannerHorizontal.jpg" alt="Esquema del joyero" style="max-width: 100%; height: auto; border: 1px solid #c5a059; margin-bottom: 1rem;">
-      [SINTONIZANDO FRECUENCIA SUBATÓMICA...]<br>
-      01011001 01010011 -- CONEXIÓN CON EL VACÍO ACTIVA
+  <div class="container">
+    <h1>NODO SINTONIZADO: EL JOYERO DE LATÓN</h1>
+    <p class="subtitle">Registros recuperados del taller de Lionel y la memoria del brazalete</p>
+
+    <!-- Mapa del Corte Transversal -->
+    <div class="map-container">
+      <img src="plano-lionel.jpg" alt="Esquema Transversal del Universo Savelis">
     </div>
 
-    <h3>Sintonización Extendida</h3>
-    <p>Introduce tu correo para acceder a la <strong>Frecuencia Savelis</strong>, recibir la lámina original en PDF del esquema de Lionel y registrar tu firma para el Libro 3.</p>
+    <div class="lore-box">
+      <strong>[ESTADO DE LA SEÑAL: ESTABLE]</strong><br>
+      Frecuencia subatómica captada en el foso bajo La City. Las lecturas corresponden al corte arquitectónico registrado por Lionel antes de la construcción del prototipo.
+    </div>
 
-    <a href="https://savelis-universo.github.io/frecuencia" class="btn">Continuar a la Frecuencia Principal</a>
+    <!-- Formulario de Suscripción / Redirección -->
+    <div class="form-box">
+      <h3>SINTONIZACIÓN EXTENDIDA DE FRECUENCIA</h3>
+      <p>Introduce tu correo para guardar tu firma en los registros del <strong>Libro 3</strong>, descargar el esquema técnico original en alta resolución (PDF) y acceder a la <strong>Frecuencia Principal</strong>.</p>
+      
+      <form action="https://savelis-universo.github.io/frecuencia" method="GET">
+        <div class="input-group">
+          <input type="email" placeholder="Introduce tu email para vincularte..." required>
+          <button type="submit" class="btn">ACCEDER A FRECUENCIA</button>
+        </div>
+      </form>
+    </div>
   </div>
+
+  <script>
+    // Configuración del canvas de fondo estilo latón/frecuencia
+    const canvas = document.getElementById('matrix');
+    const ctx = canvas.getContext('2d');
+
+    function resizeCanvas() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    }
+    resizeCanvas();
+    window.addEventListener('resize', resizeCanvas);
+
+    const chars = '0110100101010101SAVELISFRECUENCIAVACIORESONANCIALIONEL0101';
+    const fontSize = 14;
+    const columns = Math.floor(canvas.width / fontSize);
+    const drops = Array(columns).fill(1);
+
+    function draw() {
+      // Fondo tenue con rastro
+      ctx.fillStyle = 'rgba(8, 10, 15, 0.15)';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // Color Latón / Ámbar
+      ctx.fillStyle = '#c5a059';
+      ctx.font = fontSize + 'px Courier New';
+
+      for (let i = 0; i < drops.length; i++) {
+        const text = chars.charAt(Math.floor(Math.random() * chars.length));
+        ctx.fillText(text, i * fontSize, drops[i] * fontSize);
+
+        if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) {
+          drops[i] = 0;
+        }
+        drops[i]++;
+      }
+    }
+
+    setInterval(draw, 40);
+  </script>
 
 </body>
 </html>
