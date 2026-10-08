@@ -5,6 +5,27 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>El Joyero de Latón — Savelis</title>
   <style>
+
+/* Capa de destello del Vacío de Savelis */
+#vacuo-flash {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: radial-gradient(circle at center, #fff3d1 0%, #c5a059 40%, rgba(8, 10, 15, 0.95) 100%);
+  z-index: 9999;
+  pointer-events: none;
+  opacity: 0; /* Arroja 0 para que la web cargue y se vea normal al inicio */
+  transition: opacity 0.3s ease-in, opacity 1.2s cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+/* Clase para encender el fogonazo */
+#vacuo-flash.flash-active {
+  opacity: 1;
+}
+
+
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
       background-color: #080a0f;
@@ -160,6 +181,8 @@
 </head>
 <body>
 
+<div id="vacuo-flash"></div>
+
   <!-- Fondo de lluvia/vibración de latón -->
   <canvas id="matrix"></canvas>
 
@@ -195,54 +218,99 @@
     const canvas = document.getElementById('matrix');
     const ctx = canvas.getContext('2d');
 
+    // Configuración de las ondas principales
+    const waves = [
+      { amplitude: 40, baseAmp: 40, frequency: 0.008, speed: 0.02,  direction: 1,  yOffset: 0.20, lineWidth: 15, opacity: 0.45, noisePhase: Math.random() * 100, colorOffset: 0 },
+      { amplitude: 55, baseAmp: 55, frequency: 0.005, speed: 0.015, direction: -1, yOffset: 0.38, lineWidth: 12, opacity: 0.35, noisePhase: Math.random() * 100, colorOffset: 2.1 },
+      { amplitude: 25, baseAmp: 25, frequency: 0.014, speed: 0.03,  direction: 1,  yOffset: 0.55, lineWidth: 18, opacity: 0.55, noisePhase: Math.random() * 100, colorOffset: 4.2 },
+      { amplitude: 60, baseAmp: 60, frequency: 0.004, speed: 0.01,  direction: -1, yOffset: 0.72, lineWidth: 10, opacity: 0.30, noisePhase: Math.random() * 100, colorOffset: 1.5 },
+      { amplitude: 35, baseAmp: 35, frequency: 0.011, speed: 0.025, direction: 1,  yOffset: 0.85, lineWidth: 14, opacity: 0.40, noisePhase: Math.random() * 100, colorOffset: 3.6 }
+    ];
+
+    // Estrellas / Nodos con posiciones relativas (xRatio, yRatio)
+    const numStars = 120;
+    const stars = [];
+    for (let i = 0; i < numStars; i++) {
+      stars.push({
+        xRatio: Math.random(), // Posición horizontal entre 0 y 1 (porcentaje de pantalla)
+        yRatio: Math.random(), // Posición vertical entre 0 y 1
+        baseSize: Math.random() * 2.2 + 0.6,
+        size: 0,
+        baseOpacity: Math.random() * 0.4 + 0.3,
+        opacity: 0,
+        parpadeoSpeed: Math.random() * 0.03 + 0.01,
+        phase: Math.random() * Math.PI * 2,
+        linkedWaveIndex: Math.floor(Math.random() * waves.length)
+      });
+    }
+
     function resizeCanvas() {
       canvas.width = window.innerWidth;
       canvas.height = window.innerHeight;
     }
+    
+    // Inicializamos el tamaño de pantalla
     resizeCanvas();
     window.addEventListener('resize', resizeCanvas);
 
-    // Definición de las ondas con parámetros base
-    const waves = [
-      { amplitude: 40, baseAmp: 40, frequency: 0.008, speed: 0.02,  direction: 1,  yOffset: 0.20, lineWidth: 15, opacity: 0.40, noisePhase: Math.random() * 100, colorOffset: 0 },
-      { amplitude: 55, baseAmp: 55, frequency: 0.005, speed: 0.015, direction: -1, yOffset: 0.38, lineWidth: 12, opacity: 0.30, noisePhase: Math.random() * 100, colorOffset: 2.1 },
-      { amplitude: 25, baseAmp: 25, frequency: 0.014, speed: 0.03,  direction: 1,  yOffset: 0.55, lineWidth: 18, opacity: 0.45, noisePhase: Math.random() * 100, colorOffset: 4.2 },
-      { amplitude: 60, baseAmp: 60, frequency: 0.004, speed: 0.01,  direction: -1, yOffset: 0.72, lineWidth: 10, opacity: 0.25, noisePhase: Math.random() * 100, colorOffset: 1.5 },
-      { amplitude: 35, baseAmp: 35, frequency: 0.011, speed: 0.025, direction: 1,  yOffset: 0.85, lineWidth: 14, opacity: 0.35, noisePhase: Math.random() * 100, colorOffset: 3.6 }
-    ];
-
     let time = 0;
 
-    // Función para interpolar entre Dorado Latón (197, 160, 89) y Azul Vacío Savelis (0, 191, 255)
+    // Interpolación de color para las ondas (Dorado <-> Azul)
     function getWaveColor(factor, opacity) {
-      // Normalizamos el factor entre 0 y 1 usando Math.sin
-      const t = (Math.sin(factor) + 1) / 2; // 0 = Dorado puro, 1 = Azul puro
-
+      const t = (Math.sin(factor) + 1) / 2;
       const r = Math.round(197 + (0 - 197) * t);
       const g = Math.round(160 + (191 - 160) * t);
       const b = Math.round(89 + (255 - 89) * t);
-
       return `rgba(${r}, ${g}, ${b}, ${opacity})`;
     }
 
     function drawWaves() {
+      // Limpieza de lienzo
       ctx.fillStyle = '#080a0f';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
       time += 1;
 
+      // DIBUJAR PUNTOS/ESTRELLAS BLANCAS BRILLANTES
+      stars.forEach(star => {
+        const linkedWave = waves[star.linkedWaveIndex];
+
+        // Calculamos la posición real en píxeles según el tamaño actual del Canvas
+        const starX = star.xRatio * canvas.width;
+        const starY = star.yRatio * canvas.height;
+
+        const parpadeoFactor = Math.sin(time * star.parpadeoSpeed + star.phase);
+        const sizeFluctuation = (Math.sin(linkedWave.noisePhase) + 1) / 2;
+
+        star.opacity = Math.min(1, star.baseOpacity + (parpadeoFactor * 0.35));
+        star.size = star.baseSize + (sizeFluctuation * 1.2) + (parpadeoFactor * 0.6);
+
+        const auraColor = getWaveColor((time * 0.008) + linkedWave.colorOffset, star.opacity);
+
+        ctx.beginPath();
+        ctx.arc(starX, starY, star.size, 0, Math.PI * 2);
+
+        // Resplandor (Glow) exterior
+        ctx.shadowBlur = star.size * 3;
+        ctx.shadowColor = auraColor;
+
+        // Núcleo del punto: Blanco impoluto hiperbrillante
+        ctx.fillStyle = `rgba(255, 255, 255, ${star.opacity})`;
+        ctx.fill();
+
+        ctx.shadowBlur = 0;
+      });
+
+      // DIBUJAR ONDAS PRINCIPALES
       waves.forEach((wave, index) => {
-        // 1. Fluctuación de amplitud dinámica (30% arriba/abajo)
         wave.noisePhase += 0.015;
         const randomFactor = Math.sin(wave.noisePhase) + (Math.sin(time * 0.05 + index) * 0.5);
         wave.amplitude = wave.baseAmp + (randomFactor * (wave.baseAmp * 0.3));
 
-        // 2. Transición paulatina de color (Dorado Latón <-> Azul Vacío Savelis)
-        const colorCycleSpeed = 0.008; // Controla el ritmo del cambio de color
+        const colorCycleSpeed = 0.008; 
         const colorFactor = (time * colorCycleSpeed) + wave.colorOffset;
         const waveColor = getWaveColor(colorFactor, wave.opacity);
 
-        // 3. Micro-interferencias electromagnéticas
         let microNoise = 0;
         if (Math.random() < 0.08) {
           microNoise = (Math.random() - 0.5) * 8;
@@ -275,6 +343,28 @@
     }
 
     drawWaves();
+
+
+window.addEventListener('DOMContentLoaded', () => {
+  const flash = document.getElementById('vacuo-flash');
+  
+  // 1. Espera 300ms con la pantalla totalmente visible y cargada
+  setTimeout(() => {
+    // 2. Dispara el fogonazo de luz dorada
+    flash.classList.add('flash-active');
+    
+    // 3. Tras 450ms de destello intenso, comienza la disipación progresiva
+    setTimeout(() => {
+      flash.classList.remove('flash-active');
+    }, 450);
+    
+    // 4. Limpia la capa del DOM al terminar la transición
+    setTimeout(() => {
+      flash.remove();
+    }, 1500);
+
+  }, 300); // <-- Cambia este valor (en milisegundos) si quieres más o menos pausa inicial
+});
   </script>
 </body>
 </html>
