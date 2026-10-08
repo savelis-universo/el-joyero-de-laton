@@ -191,8 +191,7 @@
     </div>
   </div>
 
-  <script>
-    // Configuración del canvas de fondo estilo latón/frecuencia
+<script>
     const canvas = document.getElementById('matrix');
     const ctx = canvas.getContext('2d');
 
@@ -203,33 +202,79 @@
     resizeCanvas();
     window.addEventListener('resize', resizeCanvas);
 
-    const chars = '0110100101010101SAVELISFRECUENCIAVACIORESONANCIALIONEL0101';
-    const fontSize = 14;
-    const columns = Math.floor(canvas.width / fontSize);
-    const drops = Array(columns).fill(1);
+    // Definición de las ondas con parámetros base
+    const waves = [
+      { amplitude: 40, baseAmp: 40, frequency: 0.008, speed: 0.02,  direction: 1,  yOffset: 0.20, lineWidth: 15, opacity: 0.40, noisePhase: Math.random() * 100, colorOffset: 0 },
+      { amplitude: 55, baseAmp: 55, frequency: 0.005, speed: 0.015, direction: -1, yOffset: 0.38, lineWidth: 12, opacity: 0.30, noisePhase: Math.random() * 100, colorOffset: 2.1 },
+      { amplitude: 25, baseAmp: 25, frequency: 0.014, speed: 0.03,  direction: 1,  yOffset: 0.55, lineWidth: 18, opacity: 0.45, noisePhase: Math.random() * 100, colorOffset: 4.2 },
+      { amplitude: 60, baseAmp: 60, frequency: 0.004, speed: 0.01,  direction: -1, yOffset: 0.72, lineWidth: 10, opacity: 0.25, noisePhase: Math.random() * 100, colorOffset: 1.5 },
+      { amplitude: 35, baseAmp: 35, frequency: 0.011, speed: 0.025, direction: 1,  yOffset: 0.85, lineWidth: 14, opacity: 0.35, noisePhase: Math.random() * 100, colorOffset: 3.6 }
+    ];
 
-    function draw() {
-      // Fondo tenue con rastro
-      ctx.fillStyle = 'rgba(8, 10, 15, 0.15)';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
+    let time = 0;
 
-      // Color Latón / Ámbar
-      ctx.fillStyle = '#c5a059';
-      ctx.font = fontSize + 'px Courier New';
+    // Función para interpolar entre Dorado Latón (197, 160, 89) y Azul Vacío Savelis (0, 191, 255)
+    function getWaveColor(factor, opacity) {
+      // Normalizamos el factor entre 0 y 1 usando Math.sin
+      const t = (Math.sin(factor) + 1) / 2; // 0 = Dorado puro, 1 = Azul puro
 
-      for (let i = 0; i < drops.length; i++) {
-        const text = chars.charAt(Math.floor(Math.random() * chars.length));
-        ctx.fillText(text, i * fontSize, drops[i] * fontSize);
+      const r = Math.round(197 + (0 - 197) * t);
+      const g = Math.round(160 + (191 - 160) * t);
+      const b = Math.round(89 + (255 - 89) * t);
 
-        if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) {
-          drops[i] = 0;
-        }
-        drops[i]++;
-      }
+      return `rgba(${r}, ${g}, ${b}, ${opacity})`;
     }
 
-    setInterval(draw, 40);
-  </script>
+    function drawWaves() {
+      ctx.fillStyle = '#080a0f';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
 
+      time += 1;
+
+      waves.forEach((wave, index) => {
+        // 1. Fluctuación de amplitud dinámica (30% arriba/abajo)
+        wave.noisePhase += 0.015;
+        const randomFactor = Math.sin(wave.noisePhase) + (Math.sin(time * 0.05 + index) * 0.5);
+        wave.amplitude = wave.baseAmp + (randomFactor * (wave.baseAmp * 0.3));
+
+        // 2. Transición paulatina de color (Dorado Latón <-> Azul Vacío Savelis)
+        const colorCycleSpeed = 0.008; // Controla el ritmo del cambio de color
+        const colorFactor = (time * colorCycleSpeed) + wave.colorOffset;
+        const waveColor = getWaveColor(colorFactor, wave.opacity);
+
+        // 3. Micro-interferencias electromagnéticas
+        let microNoise = 0;
+        if (Math.random() < 0.08) {
+          microNoise = (Math.random() - 0.5) * 8;
+        }
+
+        ctx.beginPath();
+        ctx.lineWidth = wave.lineWidth;
+        ctx.strokeStyle = waveColor;
+
+        const baseHeight = canvas.height * wave.yOffset;
+
+        for (let x = 0; x <= canvas.width; x += 4) {
+          const freqVariation = wave.frequency + (Math.sin(time * 0.002 + index) * 0.001);
+          
+          const y = Math.sin(x * freqVariation + (time * wave.speed * wave.direction)) * wave.amplitude
+                  + Math.cos(x * freqVariation * 0.4) * (wave.amplitude * 0.25)
+                  + baseHeight
+                  + microNoise;
+
+          if (x === 0) {
+            ctx.moveTo(x, y);
+          } else {
+            ctx.lineTo(x, y);
+          }
+        }
+        ctx.stroke();
+      });
+
+      requestAnimationFrame(drawWaves);
+    }
+
+    drawWaves();
+  </script>
 </body>
 </html>
